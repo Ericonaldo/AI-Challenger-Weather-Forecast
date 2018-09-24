@@ -1,0 +1,134 @@
+# -*- coding:utf-8 -*-
+# basic
+from datetime import datetime, timedelta
+import time
+import re
+import sys
+
+# data analysis and wrangling
+import pandas as pd
+import numpy as np
+import random as rnd
+import netCDF4 as nc
+from netCDF4 import Dataset
+
+# visualization
+import seaborn as sns
+import matplotlib.pyplot as plt
+
+# machine learning
+from sklearn.ensemble import GradientBoostingRegressor
+from sklearn.metrics import mean_squared_error
+import xgboost
+from sklearn.ensemble import RandomForestRegressor
+import lightgbm as lgb
+
+base_path_1 = "../data/"
+base_path_2 = "../data/tmp/"
+base_path_3 = "../output/"
+
+from data_utils import *
+
+train_file = "..\\data\\ai_challenger_wf2018_trainingset_20150301-20180531.nc"
+valid_file = "..\\data\\ai_challenger_wf2018_validation_20180601-20180828_20180905.nc"
+
+def get_x_y(df, fea_cols, target_col):
+    val_num = int(len(df) / 10)
+    df = df.dropna(subset=[target_col])
+    X = df[fea_cols].values
+    y = df[target_col].values
+    return X, y
+
+def train_bst(X_tr, y_tr, X_val, y_val):
+    params = {
+        'num_leaves': 31,
+        'objective': 'regression',
+        'min_data_in_leaf': 300,
+        'learning_rate': 0.1,
+        'feature_fraction': 0.8,
+        'bagging_fraction': 0.8,
+        'bagging_freq': 2,
+        'metric': 'l2',
+        'num_threads': 8, 
+        'min_data': 1, 
+        'min_data_in_bin': 1, 
+        #'device': 'gpu', 
+    }
+    
+    MAX_ROUNDS = 500
+    dtrain = lgb.Dataset(
+        X_tr, label=y_tr,
+    )
+    dval = lgb.Dataset(
+        X_val, label=y_val, reference=dtrain, 
+    )
+    bst = lgb.train(
+        params, dtrain, num_boost_round=MAX_ROUNDS,
+        valid_sets=[dtrain, dval], early_stopping_rounds=50, verbose_eval=100
+    )
+    return bst
+
+def exract_feature(df):
+    key_list = ['stations', 'dates']
+    obs_list = ['psur_obs', 't2m_obs', 'q2m_obs', 'w10m_obs',
+        'd10m_obs', 'rh2m_obs', 'u10m_obs', 'v10m_obs', 'RAIN_obs']
+    M_list = ['psfc_M', 't2m_M', 'q2m_M', 'rh2m_M', 'w10m_M', 'd10m_M', 'u10m_M', 'v10m_M',
+        'SWD_M', 'GLW_M', 'HFX_M', 'LH_M', 'RAIN_M', 'PBLH_M', 'TC975_M',
+        'TC925_M', 'TC850_M', 'TC700_M', 'TC500_M', 'wspd975_M', 'wspd925_M',
+        'wspd850_M', 'wspd700_M', 'wspd500_M', 'Q975_M', 'Q925_M', 'Q850_M',
+        'Q700_M', 'Q500_M']
+    tar_list = ['t2m_obs', 'rh2m_obs', 'w10m_obs']
+    
+    df_obs = df[key_list+obs_list].drop_duplicates().sort_values(key_list)
+
+    list_df_fea = []
+    for tw in [3, 6, 12, 24]: #滑动窗
+        df_obs_tw = df_obs.groupby('stations').apply(lambda g: g[tar_list].shift(1).rolling(tw).mean()) # 滑动窗平均
+        df_obs_tw.columns = [col+'_{}'.format(tw) for col in df_obs_tw.columns]
+        list_df_fea.append(df_obs_tw) #添加该列
+    df_fea = pd.concat(list_df_fea, axis=1).dropna() # 拼接并舍弃nan
+    df_fea = pd.concat([df_obs[['stations', 'dates']], df_fea], axis=1).dropna()
+    
+    df_processed = pd.merge(df[key_list+M_list+ tar_list], 
+        df_fea, left_on=['stations', 'dates'], right_on=['stations', 'dates']).dropna()
+    
+    return df_processed
+
+    
+if __name__ == "__main__":
+    # 转换数据格式
+    transfer_data_to_csv(train_file, "..\\data\\train.csv")
+    transfer_data_to_csv(valid_file, "..\\data\\valid.csv")
+    
+    train_df = load_data("..\\data\\train.csv")
+    valid_df = load_data("..\\data\\valid.csv")
+    
+    # 填充缺失值
+    train_df = fill_missing_data(train_df)
+    valid_df = fill_missing_data(valid_df)    
+    
+    # train model
+    train_df_processed = exract_feature(train_df)
+    valid_df_processed = exract_feature(valid_df)
+    fea_cols = pd.Index(train_df_processed.columns[2:31].tolist() + train_df_processed.columns[34:].tolist())
+    
+    # t2m_obs
+    target_col = 't2m_obs'
+    X_tr, y_tr = get_x_y(train_df_processed, fea_cols, target_col)  
+    X_val, y_val = get_x_y(valid_df_processed, fea_cols, target_col)
+    print("Training {} model...".format(target_col))
+    bst_t2m = train_bst(X_tr, y_tr, X_val, y_val)
+    
+    # rh2m_obs
+    target_col = 'rh2m_obs'
+    X_tr, y_tr = get_x_y(train_df_processed, fea_cols, target_col)  
+    X_val, y_val = get_x_y(valid_df_processed, fea_cols, target_col)
+    print("Training {} model...".format(target_col))
+    bst_t2m = train_bst(X_tr, y_tr, X_val, y_val)
+       
+    # rh2m_obs
+    target_col = 'w10m_obs'
+    X_tr, y_tr = get_x_y(train_df_processed, fea_cols, target_col)  
+    X_val, y_val = get_x_y(valid_df_processed, fea_cols, target_col)
+    print("Training {} model...".format(target_col))
+    bst_t2m = train_bst(X_tr, y_tr, X_val, y_val)
