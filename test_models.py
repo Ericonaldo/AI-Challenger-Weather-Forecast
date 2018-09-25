@@ -42,9 +42,9 @@ def predict(df_processed, model, prd_time):
     for i in range(90001, 90011):
         for j in range(37):
             FORE_data.append('{}_{:02d}'.format(i, j))
-    pred_t2m = bst_t2m.predict(df_processed.loc[lambda x: x.date_value >= prd_time, fea_cols])
-    pred_rh2m = bst_rh2m.predict(df_processed.loc[lambda x: x.date_value >= prd_time, fea_cols])
-    pred_w10m = bst_w10m.predict(df_processed.loc[lambda x: x.date_value >= prd_time, fea_cols])
+    pred_t2m = t2m_model.predict(df_processed.loc[lambda x: x.dates >= prd_time, fea_cols])
+    pred_rh2m = rh2m_model.predict(df_processed.loc[lambda x: x.dates >= prd_time, fea_cols])
+    pred_w10m = w10m_model.predict(df_processed.loc[lambda x: x.dates >= prd_time, fea_cols])
     
     df_submit = pd.DataFrame([
         np.array(FORE_data), 
@@ -60,9 +60,9 @@ def predict(df_processed, model, prd_time):
 def test_windows_model():
     from windows_model import model_t2m_file,model_rh2m_file,model_w10m_file,exract_feature
     
-    if(not os.path.exists("..\\data\\test.csv")):
-        transfer_data_to_csv(test_file, "..\\data\\test.csv")   
-    test_df = load_data(".\\data\\test.csv")
+    if(not os.path.exists(data_path_1 + "test.csv")):
+        transfer_data_to_csv(test_file, data_path_1 + "test.csv")   
+    test_df = load_data(data_path_1 + "test.csv")
     test_df = fill_missing_data(test_df)
     for col in ['psur_obs', 't2m_obs', 'q2m_obs',
        'w10m_obs', 'd10m_obs', 'rh2m_obs', 'u10m_obs', 'v10m_obs', 'RAIN_obs']:
@@ -75,15 +75,16 @@ def test_windows_model():
     rh2m_model = pickle.load(open(model_rh2m_file, 'rb'))
     w10m_model = pickle.load(open(model_w10m_file, 'rb'))
     
-    predict(test_df_processed,[t2m_model, rh2m_model, w10m_model], PRD_TIME) # 预测并打印输出
+    prd_time = '2018-09-24 03'
+    predict(test_df_processed,[t2m_model, rh2m_model, w10m_model], prd_time) # 预测并打印输出
 
 # test model2    
 def test_model2():
-   from model2 import model_t2m_file,model_rh2m_file,model_w10m_file
+    from model2 import model_t2m_file,model_rh2m_file,model_w10m_file
    
     if(not os.path.exists("..\\data\\test.csv")):
         transfer_data_to_csv(test_file, "..\\data\\test.csv")   
-    test_df = load_data(".\\data\\test.csv")
+    test_df = load_data("..\\data\\test.csv")
     test_df = fill_missing_data(test_df)
     
     #......
@@ -93,5 +94,6 @@ def test_model2():
     rh2m_model = pickle.load(open(model_rh2m_file, 'rb'))
     w10m_model = pickle.load(open(model_w10m_file, 'rb'))
     
-    predict(test_df_processed,[t2m_model, rh2m_model, w10m_model], PRD_TIME) # 预测并打印输出
+    prd_time = '2018-09-24 03'
+    predict(test_df_processed,[t2m_model, rh2m_model, w10m_model], prd_time) # 预测并打印输出
     

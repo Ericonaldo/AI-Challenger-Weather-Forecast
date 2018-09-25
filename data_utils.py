@@ -59,9 +59,7 @@ def transfer_data_to_csv(file_name, output):
     df.insert(0,"foretimes",times)
     df.insert(0,"dates",dates)
     df.insert(0,"stations",stations)
-    df.insert(0,"station_date_time",station_date_time)
-    
-    df['dates'] = pd.to_datetime(df.dates, format='%Y%m%d%H') + df.foretimes.apply(lambda x: pd.Timedelta(x, unit='h')) 
+    df.insert(0,"station_date_time",station_date_time)    
     
     df = df.replace(-9999,np.nan) # 将填充值设置为缺失值
     df.to_csv(output, index=False)
