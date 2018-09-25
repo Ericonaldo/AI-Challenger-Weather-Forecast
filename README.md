@@ -7,7 +7,7 @@ AI challenger 2018
 
 **test_models.py: predict ans with test data, then output into asked format file, including more than one model. Using detail:**
 
-1. using python cmd
+1. use python cmd
 
 2. from test_models import *
 
