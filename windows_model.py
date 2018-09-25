@@ -4,6 +4,8 @@ from datetime import datetime, timedelta
 import time
 import re
 import sys
+import pickle
+import os
 
 # data analysis and wrangling
 import pandas as pd
@@ -23,14 +25,20 @@ import xgboost
 from sklearn.ensemble import RandomForestRegressor
 import lightgbm as lgb
 
-base_path_1 = "../data/"
-base_path_2 = "../data/tmp/"
-base_path_3 = "../output/"
+data_path_1 = "..\\data\\"
+data_path_2 = "..\\data\\tmp\\"
+output_path = "..\\output\\"
+model_path = "..\\model\\"
 
 from data_utils import *
 
 train_file = "..\\data\\ai_challenger_wf2018_trainingset_20150301-20180531.nc"
 valid_file = "..\\data\\ai_challenger_wf2018_validation_20180601-20180828_20180905.nc"
+test_file = "..\\data\\ai_challenger_wf2018_testa1_20180829-20180924.nc"
+
+model_t2m_file = model_path+"t2m.windows_model"
+model_rh2m_file = model_path+"rh2m.windows_model"
+model_w10m_file = model_path+"w10m.windows_model"
 
 def get_x_y(df, fea_cols, target_col):
     val_num = int(len(df) / 10)
@@ -92,13 +100,14 @@ def exract_feature(df):
     df_processed = pd.merge(df[key_list+M_list+ tar_list], 
         df_fea, left_on=['stations', 'dates'], right_on=['stations', 'dates']).dropna()
     
-    return df_processed
-
+    return df_processed    
     
 if __name__ == "__main__":
     # 转换数据格式
-    transfer_data_to_csv(train_file, "..\\data\\train.csv")
-    transfer_data_to_csv(valid_file, "..\\data\\valid.csv")
+    if(not os.path.exists("..\\data\\train.csv")):
+        transfer_data_to_csv(train_file, "..\\data\\train.csv")
+    if(not os.path.exists("..\\data\\valid.csv")):
+        transfer_data_to_csv(valid_file, "..\\data\\valid.csv")
     
     train_df = load_data("..\\data\\train.csv")
     valid_df = load_data("..\\data\\valid.csv")
@@ -124,11 +133,15 @@ if __name__ == "__main__":
     X_tr, y_tr = get_x_y(train_df_processed, fea_cols, target_col)  
     X_val, y_val = get_x_y(valid_df_processed, fea_cols, target_col)
     print("Training {} model...".format(target_col))
-    bst_t2m = train_bst(X_tr, y_tr, X_val, y_val)
+    bst_rh2m = train_bst(X_tr, y_tr, X_val, y_val)
        
     # rh2m_obs
     target_col = 'w10m_obs'
     X_tr, y_tr = get_x_y(train_df_processed, fea_cols, target_col)  
     X_val, y_val = get_x_y(valid_df_processed, fea_cols, target_col)
     print("Training {} model...".format(target_col))
-    bst_t2m = train_bst(X_tr, y_tr, X_val, y_val)
+    bst_w10m = train_bst(X_tr, y_tr, X_val, y_val)
+    
+    pickle.dump(bst_t2m, open(model_t2m_file, 'wb'))
+    pickle.dump(bst_rh2m, open(model_rh2m_file, 'wb'))
+    pickle.dump(bst_w10m, open(model_w10m_file, 'wb'))
