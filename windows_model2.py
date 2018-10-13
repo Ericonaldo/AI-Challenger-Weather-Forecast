@@ -36,9 +36,9 @@ train_file = "..\\data\\ai_challenger_wf2018_trainingset_20150301-20180531.nc"
 valid_file = "..\\data\\ai_challenger_wf2018_validation_20180601-20180828_20180905.nc"
 test_file = "..\\data\\ai_challenger_wf2018_testa1_20180829-20180924.nc"
 
-model_t2m_file = model_path+"t2m.windows_model"
-model_rh2m_file = model_path+"rh2m.windows_model"
-model_w10m_file = model_path+"w10m.windows_model"
+model_t2m_file = model_path+"t2m.windows_model2"
+model_rh2m_file = model_path+"rh2m.windows_model2"
+model_w10m_file = model_path+"w10m.windows_model2"
 
 def get_x_y(df, fea_cols, target_col):
     val_num = int(len(df) / 10)
@@ -92,9 +92,20 @@ def exract_feature(df, test_flag=False):
     df_obs = df[key_list+obs_list].drop_duplicates().sort_values(key_list)
 
     list_df_fea = []
+    # 滑动窗平均
     for tw in [3, 6, 12, 24]: #滑动窗
-        df_obs_tw = df_obs.groupby('stations').apply(lambda g: g[obs_list].shift(1).rolling(tw).mean()) # 滑动窗平均
-        df_obs_tw.columns = [col+'_{}'.format(tw) for col in df_obs_tw.columns]
+        df_obs_tw = df_obs.groupby('stations').apply(lambda g: g[tar_list].shift(1).rolling(tw).mean())
+        df_obs_tw.columns = [col+'_mean_{}'.format(tw) for col in df_obs_tw.columns]
+        list_df_fea.append(df_obs_tw) #添加该列
+    # 滑动窗最大值    
+    for tw in [3, 6, 12, 24]: #滑动窗
+        df_obs_tw = df_obs.groupby('stations').apply(lambda g: g[tar_list].shift(1).rolling(tw).max())
+        df_obs_tw.columns = [col+'_max_{}'.format(tw) for col in df_obs_tw.columns]
+        list_df_fea.append(df_obs_tw) #添加该列
+    # 滑动窗最小值    
+    for tw in [3, 6, 12, 24]: #滑动窗
+        df_obs_tw = df_obs.groupby('stations').apply(lambda g: g[obs_list].shift(1).rolling(tw).min())
+        df_obs_tw.columns = [col+'_min_{}'.format(tw) for col in df_obs_tw.columns]
         list_df_fea.append(df_obs_tw) #添加该列
     df_fea = pd.concat(list_df_fea, axis=1).dropna() # 拼接并舍弃nan
     df_fea = pd.concat([df_obs[['stations', 'dates']], df_fea], axis=1).dropna()
@@ -106,7 +117,7 @@ def exract_feature(df, test_flag=False):
         df_processed = pd.merge(df[key_list+M_list+ tar_list], 
             df_fea, left_on=['stations', 'dates'], right_on=['stations', 'dates']).dropna()
     
-    return df_processed    
+    return df_processed  
     
 if __name__ == "__main__":
     # 转换数据格式

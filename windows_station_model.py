@@ -36,9 +36,9 @@ train_file = "..\\data\\ai_challenger_wf2018_trainingset_20150301-20180531.nc"
 valid_file = "..\\data\\ai_challenger_wf2018_validation_20180601-20180828_20180905.nc"
 test_file = "..\\data\\ai_challenger_wf2018_testa1_20180829-20180924.nc"
 
-model_t2m_file = model_path+"t2m.windows_model"
-model_rh2m_file = model_path+"rh2m.windows_model"
-model_w10m_file = model_path+"w10m.windows_model"
+model_t2m_file = model_path+"t2m.windows_station_model"
+model_rh2m_file = model_path+"rh2m.windows_station_model"
+model_w10m_file = model_path+"w10m.windows_station_model"
 
 def get_x_y(df, fea_cols, target_col):
     val_num = int(len(df) / 10)
@@ -92,9 +92,20 @@ def exract_feature(df, test_flag=False):
     df_obs = df[key_list+obs_list].drop_duplicates().sort_values(key_list)
 
     list_df_fea = []
+    # 滑动窗平均
     for tw in [3, 6, 12, 24]: #滑动窗
-        df_obs_tw = df_obs.groupby('stations').apply(lambda g: g[obs_list].shift(1).rolling(tw).mean()) # 滑动窗平均
-        df_obs_tw.columns = [col+'_{}'.format(tw) for col in df_obs_tw.columns]
+        df_obs_tw = df_obs.groupby('stations').apply(lambda g: g[tar_list].shift(1).rolling(tw).mean())
+        df_obs_tw.columns = [col+'_mean_{}'.format(tw) for col in df_obs_tw.columns]
+        list_df_fea.append(df_obs_tw) #添加该列
+    # 滑动窗最大值    
+    for tw in [3, 6, 12, 24]: #滑动窗
+        df_obs_tw = df_obs.groupby('stations').apply(lambda g: g[tar_list].shift(1).rolling(tw).max())
+        df_obs_tw.columns = [col+'_max_{}'.format(tw) for col in df_obs_tw.columns]
+        list_df_fea.append(df_obs_tw) #添加该列
+    # 滑动窗最小值    
+    for tw in [3, 6, 12, 24]: #滑动窗
+        df_obs_tw = df_obs.groupby('stations').apply(lambda g: g[obs_list].shift(1).rolling(tw).min())
+        df_obs_tw.columns = [col+'_min_{}'.format(tw) for col in df_obs_tw.columns]
         list_df_fea.append(df_obs_tw) #添加该列
     df_fea = pd.concat(list_df_fea, axis=1).dropna() # 拼接并舍弃nan
     df_fea = pd.concat([df_obs[['stations', 'dates']], df_fea], axis=1).dropna()
@@ -117,6 +128,10 @@ if __name__ == "__main__":
     
     train_df = load_data("..\\data\\train.csv")
     valid_df = load_data("..\\data\\valid.csv")
+
+    station_id=[90001,90002, 90003, 90004, 90005, 90006, 90007, 90008, 90009, 90010]
+    train_station_df = {}
+    valid_station_df = {}
     
     # 填充缺失值
     train_df = fill_missing_data(train_df)
@@ -125,28 +140,40 @@ if __name__ == "__main__":
     # train model
     train_df_processed = exract_feature(train_df)
     valid_df_processed = exract_feature(valid_df)
+    
+    for id in station_id:
+        train_station_df[str(id)] = train_df_processed[train_df_processed["stations"]==id]
+        valid_station_df[str(id)] = valid_df_processed[valid_df_processed["stations"]==id]
+
+    # features
     fea_cols = pd.Index(train_df_processed.columns[2:31].tolist() + train_df_processed.columns[34:].tolist())
     
     # t2m_obs
     target_col = 't2m_obs'
-    X_tr, y_tr = get_x_y(train_df_processed, fea_cols, target_col)  
-    X_val, y_val = get_x_y(valid_df_processed, fea_cols, target_col)
-    print("Training {} model...".format(target_col))
-    bst_t2m = train_bst(X_tr, y_tr, X_val, y_val)
+    bst_t2m = {}
+    for id in station_id:
+        X_tr, y_tr = get_x_y(train_station_df[str(id)], fea_cols, target_col)  
+        X_val, y_val = get_x_y(valid_station_df[str(id)], fea_cols, target_col)
+        print("Training {} model for station {}...".format(target_col, id))
+        bst_t2m[str(id)] = train_bst(X_tr, y_tr, X_val, y_val)
     
     # rh2m_obs
     target_col = 'rh2m_obs'
-    X_tr, y_tr = get_x_y(train_df_processed, fea_cols, target_col)  
-    X_val, y_val = get_x_y(valid_df_processed, fea_cols, target_col)
-    print("Training {} model...".format(target_col))
-    bst_rh2m = train_bst(X_tr, y_tr, X_val, y_val)
+    bst_rh2m = {}
+    for id in station_id:
+        X_tr, y_tr = get_x_y(train_station_df[str(id)], fea_cols, target_col)  
+        X_val, y_val = get_x_y(valid_station_df[str(id)], fea_cols, target_col)
+        print("Training {} model for station {}...".format(target_col, id))
+        bst_rh2m[str(id)] = train_bst(X_tr, y_tr, X_val, y_val)
        
     # rh2m_obs
     target_col = 'w10m_obs'
-    X_tr, y_tr = get_x_y(train_df_processed, fea_cols, target_col)  
-    X_val, y_val = get_x_y(valid_df_processed, fea_cols, target_col)
-    print("Training {} model...".format(target_col))
-    bst_w10m = train_bst(X_tr, y_tr, X_val, y_val)
+    bst_w10m = {}
+    for id in station_id:
+        X_tr, y_tr = get_x_y(train_station_df[str(id)], fea_cols, target_col)  
+        X_val, y_val = get_x_y(valid_station_df[str(id)], fea_cols, target_col)
+        print("Training {} model for station {}...".format(target_col, id))
+        bst_w10m[str(id)] = train_bst(X_tr, y_tr, X_val, y_val)
     
     pickle.dump(bst_t2m, open(model_t2m_file, 'wb'))
     pickle.dump(bst_rh2m, open(model_rh2m_file, 'wb'))

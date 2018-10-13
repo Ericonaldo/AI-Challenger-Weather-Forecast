@@ -66,7 +66,7 @@ def transfer_data_to_csv(file_name, output):
 
 # 加载数据
 def load_data(file_name):
-    return pd.read_csv(file_name,sep=',') 
+    return pd.read_csv(file_name,sep=',')
 
 # 将数据分站点存储
 def divide_data_by_ports():

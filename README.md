@@ -5,6 +5,10 @@ AI challenger 2018
 
 **windows_model.py: a naive model using sliding windows.**
 
+**windows_model2.py: a naive model using more sliding windows feature.**
+
+**windows_station_model.py: a naive model using sliding windows divided by stations id.**
+
 **test_models.py: predict ans with test data, then output into asked format file, including more than one model. Using detail:**
 
 1. use python cmd
