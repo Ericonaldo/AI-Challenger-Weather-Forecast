@@ -63,7 +63,7 @@ def train_bst(X_tr, y_tr, X_val, y_val):
         #'device': 'gpu', 
     }
     
-    MAX_ROUNDS = 500
+    MAX_ROUNDS = 1000
     dtrain = lgb.Dataset(
         X_tr, label=y_tr,
     )

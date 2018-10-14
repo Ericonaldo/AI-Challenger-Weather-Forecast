@@ -88,18 +88,20 @@ def eval_result(fore_file, obs_file, anen_file):
             data_fore = data_fore.drop(t)
             data_anen = data_anen.drop(t)
 
-        # 超算rmse
+        # 预测rmse
         t2m_rmse = rmse(data_obs['t2m'], data_fore['t2m'])
         rh2m_rmse = rmse(data_obs['rh2m'], data_fore['rh2m'])
         w10m_rmse = rmse(data_obs['w10m'], data_fore['w10m'])
+        print("fore rmse: {}, {}, {}".format(t2m_rmse, rh2m_rmse, w10m_rmse))
 
         # anenrmse
         t2m_rmse1 = rmse(data_obs['t2m'], data_anen['t2m'])
         rh2m_rmse1 = rmse(data_obs['rh2m'], data_anen['rh2m'])
         w10m_rmse1 = rmse(data_obs['w10m'], data_anen['w10m'])
+        print("anen rmse: {}, {}, {}".format(t2m_rmse1, rh2m_rmse1, w10m_rmse1))
 
         # 降低率得分
-        score_all = (score(t2m_rmse1, t2m_rmse) + score(rh2m_rmse1, rh2m_rmse) + score(w10m_rmse1, w10m_rmse)) / 3
+        score_all = (score(t2m_rmse, t2m_rmse1) + score(rh2m_rmse, rh2m_rmse1) + score(w10m_rmse, w10m_rmse1)) / 3
         # bias得分
         score_bias_fore = score_bias(data_obs, data_fore)
 

@@ -47,7 +47,7 @@ def get_x_y(df, fea_cols, target_col):
     y = df[target_col].values
     return X, y
 
-def train_bst(X_tr, y_tr, X_val, y_val):
+def train_bst(X_tr, y_tr, X_val, y_val, init_model=None):
     params = {
         'num_leaves': 31,
         'objective': 'regression',
@@ -63,16 +63,17 @@ def train_bst(X_tr, y_tr, X_val, y_val):
         #'device': 'gpu', 
     }
     
-    MAX_ROUNDS = 500
+    MAX_ROUNDS = 3000
     dtrain = lgb.Dataset(
         X_tr, label=y_tr,
     )
     dval = lgb.Dataset(
         X_val, label=y_val, reference=dtrain, 
     )
+
     bst = lgb.train(
         params, dtrain, num_boost_round=MAX_ROUNDS,
-        valid_sets=[dtrain, dval], early_stopping_rounds=50, verbose_eval=100
+        init_model=init_model, valid_sets=[dtrain, dval], early_stopping_rounds=50, verbose_eval=100
     )
     return bst
 
@@ -151,29 +152,38 @@ if __name__ == "__main__":
     # t2m_obs
     target_col = 't2m_obs'
     bst_t2m = {}
+    from windows_model2 import model_t2m_file as init_model_t2m_file
+    t2m_model = pickle.load(open(init_model_t2m_file, 'rb'))
+    init_model = t2m_model
     for id in station_id:
         X_tr, y_tr = get_x_y(train_station_df[str(id)], fea_cols, target_col)  
         X_val, y_val = get_x_y(valid_station_df[str(id)], fea_cols, target_col)
         print("Training {} model for station {}...".format(target_col, id))
-        bst_t2m[str(id)] = train_bst(X_tr, y_tr, X_val, y_val)
+        bst_t2m[str(id)] = train_bst(X_tr, y_tr, X_val, y_val, init_model)
     
     # rh2m_obs
     target_col = 'rh2m_obs'
     bst_rh2m = {}
+    from windows_model2 import model_rh2m_file as init_model_rh2m_file
+    rh2m_model = pickle.load(open(init_model_rh2m_file, 'rb'))
+    init_model = rh2m_model
     for id in station_id:
         X_tr, y_tr = get_x_y(train_station_df[str(id)], fea_cols, target_col)  
         X_val, y_val = get_x_y(valid_station_df[str(id)], fea_cols, target_col)
         print("Training {} model for station {}...".format(target_col, id))
-        bst_rh2m[str(id)] = train_bst(X_tr, y_tr, X_val, y_val)
+        bst_rh2m[str(id)] = train_bst(X_tr, y_tr, X_val, y_val, init_model)
        
     # rh2m_obs
     target_col = 'w10m_obs'
     bst_w10m = {}
+    from windows_model2 import model_w10m_file as init_model_w10m_file
+    w10m_model = pickle.load(open(init_model_w10m_file, 'rb'))
+    init_model = w10m_model
     for id in station_id:
         X_tr, y_tr = get_x_y(train_station_df[str(id)], fea_cols, target_col)  
         X_val, y_val = get_x_y(valid_station_df[str(id)], fea_cols, target_col)
         print("Training {} model for station {}...".format(target_col, id))
-        bst_w10m[str(id)] = train_bst(X_tr, y_tr, X_val, y_val)
+        bst_w10m[str(id)] = train_bst(X_tr, y_tr, X_val, y_val, init_model)
     
     pickle.dump(bst_t2m, open(model_t2m_file, 'wb'))
     pickle.dump(bst_rh2m, open(model_rh2m_file, 'wb'))
