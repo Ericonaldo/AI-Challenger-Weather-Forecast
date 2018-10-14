@@ -85,6 +85,39 @@ def check(data, key, threshold):
         return False
     return threshold[key][0] <= data <= threshold[key][1]    
 
+def transfer_valid_to_test_format():
+    """
+    将valid转换为官方测评脚本需要的格式，方便测试分数。
+    """
+    prd_time = "2018-08-28 03"
+    output_path = "..\\data\\"
+    # 转换数据格式
+    if(not os.path.exists("..\\data\\valid.csv")):
+        transfer_data_to_csv(valid_file, "..\\data\\valid.csv")
+    valid_df = load_data("..\\data\\valid.csv")
+    # valid_df = fill_missing_data(valid_df)
+    valid_df['dates'] = pd.to_datetime(valid_df.dates, format='%Y%m%d%H') + valid_df.foretimes.apply(lambda x: pd.Timedelta(x, unit='h'))
+    valid_df = valid_df.drop_duplicates(subset=['stations', 'dates'], keep='last').fillna(-9999)
+
+    # 转换OBS
+    obs_name = "obs.csv"
+    tar_cols = pd.Index(["t2m_obs", "rh2m_obs", "w10m_obs"])
+    obs_dates = []
+    stat_l , stat_r = valid_df.stations.drop_duplicates().min(), valid_df.stations.drop_duplicates().max()
+    for i in range(stat_l, stat_r+1): # 所有站点
+        for j in range(37):
+            obs_dates.append('{}_{:02d}'.format(i, j))
+    df_obs = valid_df.loc[lambda x: x.dates >= prd_time, tar_cols].rename(columns={"t2m_obs": 't2m', "rh2m_obs": 'rh2m', "w10m_obs": 'w10m'})
+    df_obs.insert(0, 'FORE_data', np.array(obs_dates))
+    df_obs.to_csv(output_path+obs_name)
+    
+    # 转换ANEN
+    ane_name = "anen.csv"
+    tar_cols = pd.Index(["t2m_M", "rh2m_M", "w10m_M"])
+    df_ane = valid_df.loc[lambda x: x.dates >= prd_time, tar_cols].rename(columns={"t2m_M": 't2m', "rh2m_M": 'rh2m', "w10m_M": 'w10m'})
+    df_ane.insert(0, 'ANEN_data', np.array(obs_dates))
+    df_ane.to_csv(output_path+ane_name)
+
 # 删除训练集第一天的数据，因为其超算都是缺失
 def delete_train_day1(data):
     item = set(train.dates)

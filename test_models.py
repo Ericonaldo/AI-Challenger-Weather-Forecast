@@ -20,7 +20,10 @@ import matplotlib.pyplot as plt
 
 # machine learning
 from sklearn.externals import joblib
+
+# utils
 from data_utils import *
+from weather_forecasting2018_eval import *
 
 data_path_1 = "..\\data\\"
 data_path_2 = "..\\data\\tmp\\"
@@ -28,13 +31,20 @@ output_path = "..\\output\\"
 model_path = "..\\model\\"
 
 test_file = "..\\data\\ai_challenger_wf2018_testa1_20180829-20180924.nc"
+# 测试分数
+obs_file = "../data/obs.csv" # 观测结果
+anen_file = "../data/anen.csv" # 超算结果
 
 SUPER_START = 4
 OBS_START = 4+29
 
-prd_time = '2018-09-24 03'
-out_time = '2018-09-25 03'
+out_time = prd_time = '2018-08-28 03'
+# out_time = '2018-09-25 03'
 ans_name = 'forecast-' + "".join(re.split('-| ', out_time))+".csv"
+
+def print_score(fore_file, obs_file, anen_file):
+    result = eval_result(fore_file, obs_file, anen_file)
+    print(result)
 
 def predict(df_processed, model, prd_time):
     '''
@@ -84,6 +94,10 @@ def test_windows_model():
     df_submit = predict(test_df_processed,[t2m_model, rh2m_model, w10m_model], prd_time) # 预测并打印输出
     df_submit.to_csv(output_path+ans_name)
 
+    # 计算分数
+    fore_file = output_path+ans_name
+    print_score(fore_file, obs_file, anen_file)
+
 def test_windows_model2():
     from windows_model2 import model_t2m_file,model_rh2m_file,model_w10m_file,exract_feature
     
@@ -104,6 +118,10 @@ def test_windows_model2():
     
     df_submit = predict(test_df_processed,[t2m_model, rh2m_model, w10m_model], prd_time) # 预测并打印输出
     df_submit.to_csv(output_path+ans_name)
+
+    # 计算分数
+    fore_file = output_path+ans_name
+    print_score(fore_file, obs_file, anen_file)
 
 def test_windows_station_model():
     from windows_station_model import model_t2m_file,model_rh2m_file,model_w10m_file,exract_feature
@@ -133,6 +151,11 @@ def test_windows_station_model():
         df_submit = df_submit.append(predict(test_station_df[str(id)],[t2m_model[str(id)], rh2m_model[str(id)], w10m_model[str(id)]], prd_time))
     
     df_submit.to_csv(output_path+ans_name) # 预测并打印输出
+    
+    # 计算分数
+    fore_file = output_path+ans_name
+    print_score(fore_file, obs_file, anen_file)
+
 
 # test model2    
 def test_model2():

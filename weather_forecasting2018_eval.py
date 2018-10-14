@@ -51,7 +51,7 @@ def score(a, b):
 
 
 def score_bias(data_obs, data_fore):
-    y_name = ['       t2m', '      rh2m', '      w10m']
+    y_name = ['t2m', 'rh2m', 'w10m']
     score = 0
     for i in y_name:
         score = score + bias(data_obs[i], data_fore[i])
@@ -60,7 +60,7 @@ def score_bias(data_obs, data_fore):
     return score
 
 
-def _eval_result(fore_file, obs_file, anen_file):
+def eval_result(fore_file, obs_file, anen_file):
     '''
     cal score
     :param fore_file: predicted by contestant
@@ -89,18 +89,17 @@ def _eval_result(fore_file, obs_file, anen_file):
             data_anen = data_anen.drop(t)
 
         # 超算rmse
-        t2m_rmse = rmse(data_obs['       t2m'], data_fore['       t2m'])
-        rh2m_rmse = rmse(data_obs['      rh2m'], data_fore['      rh2m'])
-        w10m_rmse = rmse(data_obs['      w10m'], data_fore['      w10m'])
+        t2m_rmse = rmse(data_obs['t2m'], data_fore['t2m'])
+        rh2m_rmse = rmse(data_obs['rh2m'], data_fore['rh2m'])
+        w10m_rmse = rmse(data_obs['w10m'], data_fore['w10m'])
 
         # anenrmse
-        t2m_rmse1 = rmse(data_obs['       t2m'], data_anen['       t2m'])
-        rh2m_rmse1 = rmse(data_obs['      rh2m'], data_anen['      rh2m'])
-        w10m_rmse1 = rmse(data_obs['      w10m'], data_anen['      w10m'])
+        t2m_rmse1 = rmse(data_obs['t2m'], data_anen['t2m'])
+        rh2m_rmse1 = rmse(data_obs['rh2m'], data_anen['rh2m'])
+        w10m_rmse1 = rmse(data_obs['w10m'], data_anen['w10m'])
 
         # 降低率得分
         score_all = (score(t2m_rmse1, t2m_rmse) + score(rh2m_rmse1, rh2m_rmse) + score(w10m_rmse1, w10m_rmse)) / 3
-
         # bias得分
         score_bias_fore = score_bias(data_obs, data_fore)
 
@@ -109,6 +108,7 @@ def _eval_result(fore_file, obs_file, anen_file):
             'bias_fore': score_bias_fore
         }
     except Exception as e:
+        print("error!")
         result['err_code'] = 1
         result['warning'] = str(e)
 
@@ -120,7 +120,7 @@ if __name__ == '__main__':
     parser.add_argument(
         '--submit',
         type=str,
-        default='./fore.csv',
+        default='../data/fore.csv',
         help="""\
                 Path to submited file\
             """
@@ -129,7 +129,7 @@ if __name__ == '__main__':
     parser.add_argument(
         '--ref',
         type=str,
-        default='./obs.csv',
+        default='../data/obs.csv',
         help="""
                 Path to reference file
             """
@@ -138,17 +138,19 @@ if __name__ == '__main__':
     parser.add_argument(
         '--anen',
         type=str,
-        default='./anen.csv',
+        default='../data/anen.csv',
         help="""
                     Path to anen file
                 """
     )
-    fore_file="" # 超算结果
-    obs_file = "" # 观测结果
-    anen_file = "" # 预测结果
+    fore_file="../output/valid_fore-windows_model.csv" # 预测结果
+    # fore_file="../output/valid_fore-windows_model2.csv" # 预测结果
+    # fore_file="../output/valid_fore-windows_station_model.csv" # 预测结果
+    obs_file = "../data/obs.csv" # 观测结果
+    anen_file = "../data/anen.csv" # 超算结果
     # args = parser.parse_args()
     start_time = time.time()
-    # result = _eval_result(args.submit, args.ref, args.anen)
-    result = _eval_result(fore_file, obs_file, anen_file)
+    # result = eval_result(args.submit, args.ref, args.anen)
+    result = eval_result(fore_file, obs_file, anen_file)
     print(time.time() - start_time)
     print(result)

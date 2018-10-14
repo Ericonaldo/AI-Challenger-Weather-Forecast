@@ -63,7 +63,7 @@ def train_bst(X_tr, y_tr, X_val, y_val):
         #'device': 'gpu', 
     }
     
-    MAX_ROUNDS = 500
+    MAX_ROUNDS = 5000
     dtrain = lgb.Dataset(
         X_tr, label=y_tr,
     )
@@ -112,7 +112,7 @@ def exract_feature(df, test_flag=False):
     
     if test_flag:
         df_processed = pd.merge(df[key_list+M_list+ tar_list], 
-            df_fea, left_on=['stations', 'dates'], right_on=['stations', 'dates']).dropna().drop_duplicates(subset=['stations', 'dates'], keep='last')
+            df_fea, left_on=['stations', 'dates'], right_on=['stations', 'dates']).dropna().drop_duplicates(subset=['stations', 'dates'], keep='last') # why dropna()?
     else:
         df_processed = pd.merge(df[key_list+M_list+ tar_list], 
             df_fea, left_on=['stations', 'dates'], right_on=['stations', 'dates']).dropna()
