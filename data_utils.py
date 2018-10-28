@@ -64,6 +64,20 @@ def transfer_data_to_csv(file_name, output):
     df = df.replace(-9999,np.nan) # 将填充值设置为缺失值
     df.to_csv(output, index=False)
 
+# 合并数据
+def combine_data(file_names):
+    for i,file_name in enumerate(file_names):
+        transfer_data_to_csv(base_path_1+file_name, base_path_2+str(i)+'.csv')
+        tmp_df = load_data(base_path_2+str(i)+'.csv')
+        if i==0:
+            df = tmp_df
+        else:
+            df = pd.concat([
+            df, 
+            tmp_df, 
+            ]).reset_index(drop=True)
+    df.to_csv("..\\data\\all_data.csv", index=False)
+
 # 加载数据
 def load_data(file_name):
     return pd.read_csv(file_name,sep=',')

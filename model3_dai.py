@@ -29,23 +29,22 @@ data_path_1 = "..\\data\\"
 data_path_2 = "..\\data\\tmp\\"
 output_path = "..\\output\\"
 model_path = "..\\model\\"
+prd_time = '2018-10-28 03'
 
 from data_utils import *
 
-train_file = "..\\data\\ai_challenger_wf2018_trainingset_20150301-20180531.nc"
-valid_file = "..\\data\\ai_challenger_wf2018_validation_20180601-20180828_20180905.nc"
-test_file = "..\\data\\ai_challenger_wf2018_testa1_20180829-20180924.nc"
+file_names = ['ai_challenger_wf2018_trainingset_20150301-20180531.nc','ai_challenger_wf2018_validation_20180601-20180828_20180905.nc',
+    'ai_challenger_wf2018_testa1_20180829-20180924.nc','ai_challenger_weather_testingsetB_20180829-20181015.nc', 'ai_challenger_wf2018_testb1_20180829-20181028.nc']
 
-model_t2m_file = model_path+"t2m.windows_model2"
-model_rh2m_file = model_path+"rh2m.windows_model2"
-model_w10m_file = model_path+"w10m.windows_model2"
+model_t2m_file = model_path+"t2m.model3_dai"
+model_rh2m_file = model_path+"rh2m.model3_dai"
+model_w10m_file = model_path+"w10m.model3_dai"
 
-def get_x_y(df, fea_cols, target_col):
+prd_time = '2018092403'
+
+def get_train_val(tr_X, tr_y):
     val_num = int(len(df) / 10)
-    df = df.dropna(subset=[target_col])
-    X = df[fea_cols].values
-    y = df[target_col].values
-    return X, y
+    return tr_X.iloc[:-val_num].values, tr_y[:-val_num].values, tr_X.iloc[-val_num:].values, tr_y.iloc[-val_num:].values
 
 def train_bst(X_tr, y_tr, X_val, y_val):
     params = {
@@ -63,7 +62,7 @@ def train_bst(X_tr, y_tr, X_val, y_val):
         #'device': 'gpu', 
     }
     
-    MAX_ROUNDS = 2000
+    MAX_ROUNDS = 1000
     dtrain = lgb.Dataset(
         X_tr, label=y_tr,
     )
@@ -75,6 +74,15 @@ def train_bst(X_tr, y_tr, X_val, y_val):
         valid_sets=[dtrain, dval], early_stopping_rounds=50, verbose_eval=100
     )
     return bst
+
+def get_fea(df, postfix):
+    df_fea = pd.merge(
+        df, 
+        df.drop('stations', axis=1).groupby(['dates', 'foretimes'], as_index=False).mean(), 
+        left_on=['dates', 'foretimes'], 
+        right_on=['dates', 'foretimes']
+    )
+    return df_fea.rename(columns=dict(zip(df_fea.columns[3:], [f'{col}_{postfix}' for col in df_fea.columns[3:]])))    
 
 def exract_feature(df, test_flag=False):
     key_list = ['stations', 'dates']
@@ -88,9 +96,9 @@ def exract_feature(df, test_flag=False):
     tar_list = ['t2m_obs', 'rh2m_obs', 'w10m_obs']
     
     df['dates'] = pd.to_datetime(df.dates, format='%Y%m%d%H') + df.foretimes.apply(lambda x: pd.Timedelta(x, unit='h')) 
-    
+    """
     df_obs = df[key_list+obs_list].drop_duplicates().sort_values(key_list)
-
+    
     list_df_fea = []
     # 滑动窗平均
     for tw in [3, 6, 12, 24]: #滑动窗
@@ -107,57 +115,83 @@ def exract_feature(df, test_flag=False):
         df_obs_tw = df_obs.groupby('stations').apply(lambda g: g[obs_list].shift(1).rolling(tw).min())
         df_obs_tw.columns = [col+'_min_{}'.format(tw) for col in df_obs_tw.columns]
         list_df_fea.append(df_obs_tw) #添加该列
+    
     df_fea = pd.concat(list_df_fea, axis=1).dropna() # 拼接并舍弃nan
     df_fea = pd.concat([df_obs[['stations', 'dates']], df_fea], axis=1).dropna()
+    """
+    df['t2m_obj'] = df.t2m_obs - df.t2m_M
+    df['rh2m_obj'] = df.rh2m_obs - df.rh2m_M
+    df['w10m_obj'] = df.w10m_obs - df.w10m_M
+
+    # feature 2 days ago
+    df_all = df.copy()
+    df_fea = df.copy().drop('station_date_time', axis=1)
+    df_fea['dates'] = df_fea['dates'] + pd.Timedelta('2 days')
+    df_all = pd.merge(
+        df_all, 
+        get_fea(df_fea, '2d'), 
+        left_on=['stations', 'dates', 'foretimes'], 
+        right_on=['stations', 'dates', 'foretimes']
+    )
     
-    if test_flag:
-        df_processed = pd.merge(df[key_list+M_list+ tar_list], 
-            df_fea, left_on=['stations', 'dates'], right_on=['stations', 'dates']).dropna().drop_duplicates(subset=['stations', 'dates'], keep='last') # why dropna()?
-    else:
-        df_processed = pd.merge(df[key_list+M_list+ tar_list], 
-            df_fea, left_on=['stations', 'dates'], right_on=['stations', 'dates']).dropna()
+    # feature- 7 days ago
+    df_fea = df.copy().drop('station_date_time', axis=1)
+    df_fea['dates'] = df_fea['dates'] + pd.Timedelta('7 days')
+    df_all = pd.merge(
+        df_all, 
+        get_fea(df_fea, '7d'), 
+        left_on=['stations', 'dates', 'foretimes'], 
+        right_on=['stations', 'dates', 'foretimes']
+    )
     
+    # feature - 1 year ago
+    df_fea = df.copy().drop('station_date_time', axis=1)
+    df_fea['dates'] = df_fea['dates'] + pd.Timedelta('365 days')
+    df_processed = pd.merge(
+        df_all, 
+        get_fea(df_fea, '1y'), 
+        left_on=['stations', 'dates', 'foretimes'], 
+        right_on=['stations', 'dates', 'foretimes']
+    )
+     
     return df_processed  
     
 if __name__ == "__main__":
     # 转换数据格式
-    if(not os.path.exists("..\\data\\train.csv")):
-        transfer_data_to_csv(train_file, "..\\data\\train.csv")
-    if(not os.path.exists("..\\data\\valid.csv")):
-        transfer_data_to_csv(valid_file, "..\\data\\valid.csv")
-    
-    train_df = load_data("..\\data\\train.csv")
-    valid_df = load_data("..\\data\\valid.csv")
-    
-    # 填充缺失值
-    # train_df = fill_missing_data(train_df)
-    # valid_df = fill_missing_data(valid_df)    
+    if(not os.path.exists("..\\data\\all_data.csv")):
+        combine_data(file_names)
+
+    df = load_data("..\\data\\all_data.csv")
     
     # train model
-    train_df_processed = exract_feature(train_df)
-    valid_df_processed = exract_feature(valid_df)
-    fea_cols = pd.Index(train_df_processed.columns[2:31].tolist() + train_df_processed.columns[34:].tolist())
+    df_processed = exract_feature(df)
     
-    # t2m_obs
-    target_col = 't2m_obs'
-    X_tr, y_tr = get_x_y(train_df_processed, fea_cols, target_col)  
-    X_val, y_val = get_x_y(valid_df_processed, fea_cols, target_col)
+    test_idx = df_processed[lambda x: x.station_date_time.str.split('_').apply(lambda x: x[1]) == prd_time.replace('-','').replace(' ','')].index
+    df_test = df_processed.loc[test_idx]
+    df_train = df_processed.loc[df_processed.index.difference(test_idx)]
+    df_train.dropna(subset=['t2m_obj', 'rh2m_obj', 'w10m_obj'], inplace=True)
+    df_train_y = df_train[['t2m_obj', 'rh2m_obj', 'w10m_obj']]
+    df_train.drop(df_train.columns[33:45], axis=1, inplace=True)
+    df_test.drop(df_train.columns[33:45], axis=1, inplace=True)
+
+    df_train_X = df_train[df_train.columns[3:]]
+    df_test_X = df_test[df_test.columns[3:]]
+
+    # t2m model 
+    target_col = 't2m_obj'
+    X_tr, y_tr, X_val, y_val = get_train_val(df_train_X, df_train_y)
     print("Training {} model...".format(target_col))
-    bst_t2m = train_bst(X_tr, y_tr, X_val, y_val)
+    bst_t2m = train_bst(X_tr, y_tr[:, 0], X_val, y_val[:, 0])
     
-    # rh2m_obs
-    target_col = 'rh2m_obs'
-    X_tr, y_tr = get_x_y(train_df_processed, fea_cols, target_col)  
-    X_val, y_val = get_x_y(valid_df_processed, fea_cols, target_col)
+    # rh2m model
+    target_col = 'rh2m_obj'
     print("Training {} model...".format(target_col))
-    bst_rh2m = train_bst(X_tr, y_tr, X_val, y_val)
+    bst_rh2m = train_bst(X_tr, y_tr[:, 1], X_val, y_val[:, 1])
        
-    # rh2m_obs
-    target_col = 'w10m_obs'
-    X_tr, y_tr = get_x_y(train_df_processed, fea_cols, target_col)  
-    X_val, y_val = get_x_y(valid_df_processed, fea_cols, target_col)
+    # rh2m model
+    target_col = 'w10m_obj'
     print("Training {} model...".format(target_col))
-    bst_w10m = train_bst(X_tr, y_tr, X_val, y_val)
+    bst_w10m = train_bst(X_tr, y_tr[:, 2], X_val, y_val[:, 2])
     
     pickle.dump(bst_t2m, open(model_t2m_file, 'wb'))
     pickle.dump(bst_rh2m, open(model_rh2m_file, 'wb'))

@@ -63,7 +63,7 @@ def train_bst(X_tr, y_tr, X_val, y_val):
         #'device': 'gpu', 
     }
     
-    MAX_ROUNDS = 1000
+    MAX_ROUNDS = 2000
     dtrain = lgb.Dataset(
         X_tr, label=y_tr,
     )
@@ -119,8 +119,8 @@ if __name__ == "__main__":
     valid_df = load_data("..\\data\\valid.csv")
     
     # 填充缺失值
-    train_df = fill_missing_data(train_df)
-    valid_df = fill_missing_data(valid_df)    
+    # train_df = fill_missing_data(train_df)
+    # valid_df = fill_missing_data(valid_df)    
     
     # train model
     train_df_processed = exract_feature(train_df)

@@ -30,16 +30,17 @@ data_path_2 = "..\\data\\tmp\\"
 output_path = "..\\output\\"
 model_path = "..\\model\\"
 
-test_file = "..\\data\\ai_challenger_wf2018_testa1_20180829-20180924.nc"
+test_file = "..\\data\\ai_challenger_weather_testingsetB_20180829-20181015.nc"
+test_file = "..\\data\\ai_challenger_wf2018_testb1_20180829-20181028.nc"
+
 # 测试分数
-obs_file = "../data/obs.csv" # 观测结果
-anen_file = "../data/anen.csv" # 超算结果
+obs_file = "../data/OBS_2018092403.csv" # 观测结果
+fore_file = "../data/FORE_2018092403.csv" # 超算结果
 
 SUPER_START = 4
 OBS_START = 4+29
 
-out_time = prd_time = '2018-08-28 03'
-# out_time = '2018-09-25 03'
+out_time = prd_time = '2018-10-28 03'
 ans_name = 'forecast-' + "".join(re.split('-| ', out_time))+".csv"
 
 def print_score(fore_file, obs_file, anen_file):
@@ -56,6 +57,7 @@ def predict(df_processed, model, prd_time):
     fea_cols = pd.Index(df_processed.columns[2:31].tolist() + df_processed.columns[34:].tolist())
     FORE_data = []
     stat_l , stat_r = df_processed.stations.drop_duplicates().min(), df_processed.stations.drop_duplicates().max()
+
     for i in range(stat_l, stat_r+1): # 所有站点
         for j in range(37):
             FORE_data.append('{}_{:02d}'.format(i, j))
@@ -77,9 +79,9 @@ def test_windows_model():
     from windows_model import model_t2m_file,model_rh2m_file,model_w10m_file,exract_feature
     
     if(not os.path.exists(data_path_1 + "test.csv")):
-        transfer_data_to_csv(test_file, data_path_1 + "test.csv")   
+        transfer_data_to_csv(test_file, data_path_1 + "test.csv")
     test_df = load_data(data_path_1 + "test.csv")
-    test_df = fill_missing_data(test_df)
+    # test_df = fill_missing_data(test_df)
     for col in ['psur_obs', 't2m_obs', 'q2m_obs',
        'w10m_obs', 'd10m_obs', 'rh2m_obs', 'u10m_obs', 'v10m_obs', 'RAIN_obs']:
         col_filled = col.split('_')[0] + '_M' if 'psur' not in col else 'psfc_M'
@@ -92,10 +94,10 @@ def test_windows_model():
     w10m_model = pickle.load(open(model_w10m_file, 'rb'))
     
     df_submit = predict(test_df_processed,[t2m_model, rh2m_model, w10m_model], prd_time) # 预测并打印输出
-    df_submit.to_csv(output_path+ans_name)
+    df_submit.to_csv(output_path+ans_name, index=False)
 
     # 计算分数
-    fore_file = output_path+ans_name
+    anen_file = output_path+ans_name
     print_score(fore_file, obs_file, anen_file)
 
 def test_windows_model2():
@@ -104,7 +106,7 @@ def test_windows_model2():
     if(not os.path.exists(data_path_1 + "test.csv")):
         transfer_data_to_csv(test_file, data_path_1 + "test.csv")   
     test_df = load_data(data_path_1 + "test.csv")
-    test_df = fill_missing_data(test_df)
+    # test_df = fill_missing_data(test_df)
     for col in ['psur_obs', 't2m_obs', 'q2m_obs',
        'w10m_obs', 'd10m_obs', 'rh2m_obs', 'u10m_obs', 'v10m_obs', 'RAIN_obs']:
         col_filled = col.split('_')[0] + '_M' if 'psur' not in col else 'psfc_M'
@@ -117,10 +119,10 @@ def test_windows_model2():
     w10m_model = pickle.load(open(model_w10m_file, 'rb'))
     
     df_submit = predict(test_df_processed,[t2m_model, rh2m_model, w10m_model], prd_time) # 预测并打印输出
-    df_submit.to_csv(output_path+ans_name)
+    df_submit.to_csv(output_path+ans_name, index=False)
 
     # 计算分数
-    fore_file = output_path+ans_name
+    anen_file = output_path+ans_name
     print_score(fore_file, obs_file, anen_file)
 
 def test_windows_station_model():
@@ -129,7 +131,7 @@ def test_windows_station_model():
     if(not os.path.exists(data_path_1 + "test.csv")):
         transfer_data_to_csv(test_file, data_path_1 + "test.csv")   
     test_df = load_data(data_path_1 + "test.csv")
-    test_df = fill_missing_data(test_df)
+    # test_df = fill_missing_data(test_df)
     for col in ['psur_obs', 't2m_obs', 'q2m_obs',
        'w10m_obs', 'd10m_obs', 'rh2m_obs', 'u10m_obs', 'v10m_obs', 'RAIN_obs']:
         col_filled = col.split('_')[0] + '_M' if 'psur' not in col else 'psfc_M'
@@ -150,29 +152,54 @@ def test_windows_station_model():
     for id in station_id[1:]:
         df_submit = df_submit.append(predict(test_station_df[str(id)],[t2m_model[str(id)], rh2m_model[str(id)], w10m_model[str(id)]], prd_time))
     
-    df_submit.to_csv(output_path+ans_name) # 预测并打印输出
+    df_submit.to_csv(output_path+ans_name, index=False) # 预测并打印输出
     
     # 计算分数
-    fore_file = output_path+ans_name
+    anen_file = output_path+ans_name
     print_score(fore_file, obs_file, anen_file)
 
 
 # test model2    
-def test_model2():
-    from model2 import model_t2m_file,model_rh2m_file,model_w10m_file
-   
-    if(not os.path.exists("..\\data\\test.csv")):
-        transfer_data_to_csv(test_file, "..\\data\\test.csv")   
-    test_df = load_data("..\\data\\test.csv")
-    test_df = fill_missing_data(test_df)
+def test_model3_dai():
+    from model3_dai import model_t2m_file,model_rh2m_file,model_w10m_file,exract_feature
     
-    #......
+    if(not os.path.exists(data_path_1 + "test.csv")):
+        transfer_data_to_csv(test_file, data_path_1 + "test.csv")
+
+    train_df = load_data("..\\data\\train.csv")
+    valid_df = load_data("..\\data\\valid.csv")
+    test_df = load_data("..\\data\\test.csv")
+
+    # 填充缺失值
+    # train_df = fill_missing_data(train_df)
+    # valid_df = fill_missing_data(valid_df)
+    df = pd.concat([
+    train_df, 
+    valid_df, 
+    test_df, 
+    ]).reset_index(drop=True)
+
+    df_processed = exract_feature(df)
+    test_idx = df_processed[lambda x: x.station_date_time.str.split('_').apply(lambda x: x[1]) == prd_time.replace('-','').replace(' ','')].index
+    df_test = df_processed.loc[test_idx]
+    df_test.drop(df_test.columns[33:45], axis=1, inplace=True)
+    df_test_X = df_test[df_test.columns[3:]]
     
     # 加载模型
     t2m_model = pickle.load(open(model_t2m_file, 'rb'))
     rh2m_model = pickle.load(open(model_rh2m_file, 'rb'))
     w10m_model = pickle.load(open(model_w10m_file, 'rb'))
     
-    prd_time = '2018-09-24 03'
-    predict(test_df_processed,[t2m_model, rh2m_model, w10m_model], prd_time) # 预测并打印输出
+    df_submit = pd.DataFrame([
+        [f'{item[0]}_{int(item[2]):02d}' for item in df_test.station_date_time.str.split('_')], 
+        (df_test.t2m_M + t2m_model.predict(df_test_X)).tolist(), 
+        (df_test.rh2m_M + rh2m_model.predict(df_test_X)).tolist(), 
+        (df_test.w10m_M + w10m_model.predict(df_test_X)).tolist(), 
+    ]).T.rename(columns={0: 'FORE_data', 1: 't2m', 2: 'rh2m', 3: 'w10m'})
+    
+    df_submit.to_csv(output_path+ans_name, index=False) # 预测并打印输出
+
+    # 计算分数
+    anen_file = output_path+ans_name
+    # print_score(fore_file, obs_file, anen_file)
     

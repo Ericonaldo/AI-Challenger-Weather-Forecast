@@ -153,8 +153,10 @@ if __name__ == "__main__":
     target_col = 't2m_obs'
     bst_t2m = {}
     from windows_model2 import model_t2m_file as init_model_t2m_file
-    t2m_model = pickle.load(open(init_model_t2m_file, 'rb'))
-    init_model = t2m_model
+    init_model = None
+    if(os.path.exists(init_model_t2m_file)):
+        t2m_model = pickle.load(open(init_model_t2m_file, 'rb'))
+        init_model = t2m_model
     for id in station_id:
         X_tr, y_tr = get_x_y(train_station_df[str(id)], fea_cols, target_col)  
         X_val, y_val = get_x_y(valid_station_df[str(id)], fea_cols, target_col)
@@ -165,8 +167,10 @@ if __name__ == "__main__":
     target_col = 'rh2m_obs'
     bst_rh2m = {}
     from windows_model2 import model_rh2m_file as init_model_rh2m_file
-    rh2m_model = pickle.load(open(init_model_rh2m_file, 'rb'))
-    init_model = rh2m_model
+    init_model = None
+    if(os.path.exists(init_model_rh2m_file)):
+        rh2m_model = pickle.load(open(init_model_rh2m_file, 'rb'))
+        init_model = rh2m_model
     for id in station_id:
         X_tr, y_tr = get_x_y(train_station_df[str(id)], fea_cols, target_col)  
         X_val, y_val = get_x_y(valid_station_df[str(id)], fea_cols, target_col)
@@ -176,9 +180,11 @@ if __name__ == "__main__":
     # rh2m_obs
     target_col = 'w10m_obs'
     bst_w10m = {}
+    init_model = None
     from windows_model2 import model_w10m_file as init_model_w10m_file
-    w10m_model = pickle.load(open(init_model_w10m_file, 'rb'))
-    init_model = w10m_model
+    if(os.path.exists(init_model_w10m_file)):
+        w10m_model = pickle.load(open(init_model_w10m_file, 'rb'))
+        init_model = w10m_model
     for id in station_id:
         X_tr, y_tr = get_x_y(train_station_df[str(id)], fea_cols, target_col)  
         X_val, y_val = get_x_y(valid_station_df[str(id)], fea_cols, target_col)
