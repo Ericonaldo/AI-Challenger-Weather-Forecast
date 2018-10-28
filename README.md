@@ -11,7 +11,7 @@ AI challenger 2018
 
 **windows_station_model.py: a naive model using sliding windows divided by stations id.**
 
-**model_dai.py: model using old days data and predict the difference between ruitu and real data.**
+**old_days_model.py: model using old days data and predict the difference between ruitu and real data.**
 
 **test_models.py: predict ans with test data, then output into asked format file, including more than one model. Using detail:**
 

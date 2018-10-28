@@ -160,8 +160,8 @@ def test_windows_station_model():
 
 
 # test model2    
-def test_model3_dai():
-    from model3_dai import model_t2m_file,model_rh2m_file,model_w10m_file,exract_feature
+def test_old_days_model():
+    from old_days_model import model_t2m_file,model_rh2m_file,model_w10m_file,exract_feature
     
     if(not os.path.exists(data_path_1 + "test.csv")):
         transfer_data_to_csv(test_file, data_path_1 + "test.csv")
