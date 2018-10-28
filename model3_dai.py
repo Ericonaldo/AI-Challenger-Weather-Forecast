@@ -29,18 +29,20 @@ data_path_1 = "..\\data\\"
 data_path_2 = "..\\data\\tmp\\"
 output_path = "..\\output\\"
 model_path = "..\\model\\"
-prd_time = '2018-10-28 03'
 
+from test_models import prd_time
 from data_utils import *
 
 file_names = ['ai_challenger_wf2018_trainingset_20150301-20180531.nc','ai_challenger_wf2018_validation_20180601-20180828_20180905.nc',
     'ai_challenger_wf2018_testa1_20180829-20180924.nc','ai_challenger_weather_testingsetB_20180829-20181015.nc', 'ai_challenger_wf2018_testb1_20180829-20181028.nc']
 
+#file_names = ['ai_challenger_wf2018_trainingset_20150301-20180531.nc','ai_challenger_wf2018_validation_20180601-20180828_20180905.nc',
+#    'ai_challenger_wf2018_testa1_20180829-20180924.nc','ai_challenger_weather_testingsetB_20180829-20181015.nc']
+
 model_t2m_file = model_path+"t2m.model3_dai"
 model_rh2m_file = model_path+"rh2m.model3_dai"
 model_w10m_file = model_path+"w10m.model3_dai"
 
-prd_time = '2018092403'
 
 def get_train_val(tr_X, tr_y):
     val_num = int(len(df) / 10)
@@ -62,7 +64,7 @@ def train_bst(X_tr, y_tr, X_val, y_val):
         #'device': 'gpu', 
     }
     
-    MAX_ROUNDS = 1000
+    MAX_ROUNDS = 1500
     dtrain = lgb.Dataset(
         X_tr, label=y_tr,
     )

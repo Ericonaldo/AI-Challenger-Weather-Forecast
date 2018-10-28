@@ -30,12 +30,12 @@ data_path_2 = "..\\data\\tmp\\"
 output_path = "..\\output\\"
 model_path = "..\\model\\"
 
-test_file = "..\\data\\ai_challenger_weather_testingsetB_20180829-20181015.nc"
-test_file = "..\\data\\ai_challenger_wf2018_testb1_20180829-20181028.nc"
+# test_file = "..\\data\\ai_challenger_weather_testingsetB_20180829-20181015.nc"
+# test_file = "..\\data\\ai_challenger_wf2018_testb1_20180829-20181028.nc"
 
 # 测试分数
-obs_file = "../data/OBS_2018092403.csv" # 观测结果
-fore_file = "../data/FORE_2018092403.csv" # 超算结果
+obs_file = "../data/aic_wf2018_testa2_obs_2018101503.csv" # 观测结果
+fore_file = "../data/aic_wf2018_testa2_fore_2018101503.csv" # 超算结果
 
 SUPER_START = 4
 OBS_START = 4+29
