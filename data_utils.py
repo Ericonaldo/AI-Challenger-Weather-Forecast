@@ -27,6 +27,46 @@ base_path_3 = "../output/"
 SUPER_START = 4
 OBS_START = 4+29
 
+THRESHOLD = {"psur_obs":[850,1100],
+    "t2m_obs":[-40,55],
+    "q2m_obs":[0,30],
+    "rh2m_obs":[0,100],
+    "w10m_obs":[0,30],
+    "d10m_obs":[0,360],
+    "u10m_obs":[-30,30],
+    "v10m_obs":[-30,30],
+    "RAIN_obs":[0,400],
+    "psfc_M":[850,1100],
+    "t2m_M":[-40,55],
+    "q2m_M":[0,30],
+    "rh2m_M":[0,100],
+    "w10m_M":[0,30],
+    "d10m_M":[0,360],
+    "u10m_M":[-30,30],
+    "v10m_M":[-30,30],
+    "SWD_M":[0,1500],
+    "GLW_M":[0,800],
+    "HFX_M":[-400,1000],
+    "LH_M":[-100,1000],
+    "RAIN_M":[0,400],
+    "PBLH_M":[0,6000],
+    "TC975_M":[-50,45],
+    "TC925_M":[-50,45],
+    "TC850_M":[-55,40],
+    "TC700_M":[-60,35],
+    "TC500_M":[-70,30],
+    "wspd975_M":[0,60],
+    "wspd925_M":[0,70],
+    "wspd850_M":[0,80],
+    "wspd700_M":[0,90],
+    "wspd500_M":[0,100],
+    "Q975_M":[0,30],
+    "Q925_M":[0,30],
+    "Q850_M":[0,30],
+    "Q700_M":[0,25],
+    "Q500_M":[0,25]
+}
+
 # 将数据转换为csv格式
 def transfer_data_to_csv(file_name, output):
     data=Dataset(file_name)
@@ -87,17 +127,16 @@ def divide_data_by_ports():
     # TODO
     pass
 
-def check(data, key, threshold):
+def check(df):
     """
-    检查一个样本的某个特征是否合法
-    :param data: 特征值的大小
-    :param key: 对应的特征名称
-    :param threshold: 字典,存放每个特征值对应的合理值区间
+    检查一个样本的特征是否合法
     :return: True or False
     """
-    if not isinstance(data, np.float32):
-        return False
-    return threshold[key][0] <= data <= threshold[key][1]    
+    for column in df.columns: # 将超出范围值设置为缺失值
+        if column in THRESHOLD.keys():
+            df[THRESHOLD[column][0]>df[column]]=np.nan
+            df[THRESHOLD[column][1]<df[column]]=np.nan   
+    return df 
 
 def transfer_valid_to_test_format():
     """
@@ -205,8 +244,18 @@ def fill_with_linear(data, attr_need):
     
 # 填充缺失值
 def fill_missing_data(data):
-    attr_need = ['t2m_M', 'psfc_M', 'q2m_M', 'w10m_M', 'd10m_M', 'SWD_M', 'GLW_M', 'LH_M', 'HFX_M', 'RAIN_M', 'PBLH_M', 'psur_obs','t2m_obs','q2m_obs', 'w10m_obs', 'd10m_obs', 'rh2m_obs', 'u10m_obs', 'v10m_obs', 'RAIN_obs']
+    key_list = ['stations', 'dates']
+    obs_list = ['psur_obs', 't2m_obs', 'q2m_obs', 'w10m_obs',
+        'd10m_obs', 'rh2m_obs', 'u10m_obs', 'v10m_obs', 'RAIN_obs']
+    M_list = ['psfc_M', 't2m_M', 'q2m_M', 'rh2m_M', 'w10m_M', 'd10m_M', 'u10m_M', 'v10m_M',
+        'SWD_M', 'GLW_M', 'HFX_M', 'LH_M', 'RAIN_M', 'PBLH_M', 'TC975_M',
+        'TC925_M', 'TC850_M', 'TC700_M', 'TC500_M', 'wspd975_M', 'wspd925_M',
+        'wspd850_M', 'wspd700_M', 'wspd500_M', 'Q975_M', 'Q925_M', 'Q850_M',
+        'Q700_M', 'Q500_M']
+    tar_list = ['t2m_obs', 'rh2m_obs', 'w10m_obs']
+    # attr_need = ['t2m_M', 'psfc_M', 'q2m_M', 'w10m_M', 'd10m_M', 'SWD_M', 'GLW_M', 'LH_M', 'HFX_M', 'RAIN_M', 'PBLH_M', 'psur_obs','t2m_obs','q2m_obs', 'w10m_obs', 'd10m_obs', 'rh2m_obs', 'u10m_obs', 'v10m_obs', 'RAIN_obs']
+    attr_need = obs_list + M_list
     data = fill_with_dup(data, attr_need) # 利用重复时段的值进行填充
-    data = fill_train_day1(data) # 利用均值填充第一天的超算数据   
+    # data = fill_train_day1(data) # 利用均值填充第一天的超算数据   
     data = fill_with_linear(data, attr_need) # 缺失值只有1,2,或者3个,线性填充
     return data
