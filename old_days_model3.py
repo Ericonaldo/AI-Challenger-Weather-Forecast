@@ -24,25 +24,24 @@ from sklearn.metrics import mean_squared_error
 import xgboost
 from sklearn.ensemble import RandomForestRegressor
 import lightgbm as lgb
-from weather_forecasting2018_eval import *
 
 data_path_1 = "..\\data\\"
 data_path_2 = "..\\data\\tmp\\"
 output_path = "..\\output\\"
 model_path = "..\\model\\"
 
-from test_models import prd_time
+prd_time = '2018-10-15 03'
 from data_utils import *
 
-#file_names = ['ai_challenger_wf2018_trainingset_20150301-20180531.nc','ai_challenger_wf2018_validation_20180601-20180828_20180905.nc',
-#    'ai_challenger_wf2018_testa1_20180829-20180924.nc','ai_challenger_weather_testingsetB_20180829-20181015.nc', 'ai_challenger_wf2018_testb3_20180829-20181030.nc']
-
 file_names = ['ai_challenger_wf2018_trainingset_20150301-20180531.nc','ai_challenger_wf2018_validation_20180601-20180828_20180905.nc',
-    'ai_challenger_wf2018_testa1_20180829-20180924.nc','ai_challenger_weather_testingsetB_20180829-20181015.nc']
+    'ai_challenger_wf2018_testa1_20180829-20180924.nc','ai_challenger_weather_testingsetB_20180829-20181015.nc', 'ai_challenger_wf2018_testb5_20180829-20181101.nc']
 
-model_t2m_file = model_path+"t2m.old_days_model3"
-model_rh2m_file = model_path+"rh2m.old_days_model3"
-model_w10m_file = model_path+"w10m.old_days_model3"
+#file_names = ['ai_challenger_wf2018_trainingset_20150301-20180531.nc','ai_challenger_wf2018_validation_20180601-20180828_20180905.nc',
+#    'ai_challenger_wf2018_testa1_20180829-20180924.nc','ai_challenger_weather_testingsetB_20180829-20181015.nc']
+
+model_t2m_file = model_path+"t2m.old_days_model_catlog2"
+model_rh2m_file = model_path+"rh2m.old_days_model_catlog2"
+model_w10m_file = model_path+"w10m.old_days_model_catlog2"
 
 
 def get_train_val(tr_X, tr_y):
@@ -51,6 +50,7 @@ def get_train_val(tr_X, tr_y):
 
 def train_bst(X_tr, y_tr, X_val, y_val, feature_names='auto'):
     params = {
+        'boosting': 'gbdt',
         'num_leaves': 31,
         'objective': 'regression',
         'min_data_in_leaf': 300,
@@ -62,19 +62,17 @@ def train_bst(X_tr, y_tr, X_val, y_val, feature_names='auto'):
         'num_threads': 8, 
         'min_data': 1, 
         'min_data_in_bin': 1, 
-        #'device': 'gpu', 
+        # 'device': 'gpu', 
     }
     
-    MAX_ROUNDS = 1500
+    MAX_ROUNDS = 2000
     dtrain = lgb.Dataset(
         X_tr, label=y_tr,
-        #weight = w_tr,
     )
     dval = lgb.Dataset(
-        X_val, label=y_val, reference=dtrain,
-        #weight = w_val,
+        X_val, label=y_val, reference=dtrain, 
         feature_name=list(feature_names),
-        categorical_feature = [0,1]
+        categorical_feature = ['stations','foretimes','week','month','quarter', 'd10m_M', 'RAIN_M', 'is_today'] # 加上后两个会变少，有点奇怪
     )
     bst = lgb.train(
         params, dtrain, num_boost_round=MAX_ROUNDS,
@@ -85,11 +83,11 @@ def train_bst(X_tr, y_tr, X_val, y_val, feature_names='auto'):
 def get_fea(df, postfix):
     df_fea = pd.merge(
         df, 
-        df.drop(['station_date_time','stations'], axis=1).groupby(['dates', 'foretimes'], as_index=False).mean(), 
+        df.drop('stations', axis=1).groupby(['dates', 'foretimes'], as_index=False).mean(), 
         left_on=['dates', 'foretimes'], 
         right_on=['dates', 'foretimes']
     )
-    return df_fea.rename(columns=dict(zip(df_fea.columns[4:], [f'{col}_{postfix}' for col in df_fea.columns[3:]])))    
+    return df_fea.rename(columns=dict(zip(df_fea.columns[3:], [f'{col}_{postfix}' for col in df_fea.columns[3:]])))    
 
 def exract_feature(df, test_flag=False):
     key_list = ['station_date_time','stations', 'dates','foretimes']
@@ -101,10 +99,9 @@ def exract_feature(df, test_flag=False):
         'wspd850_M', 'wspd700_M', 'wspd500_M', 'Q975_M', 'Q925_M', 'Q850_M',
         'Q700_M', 'Q500_M']
     tar_list = ['t2m_obs', 'rh2m_obs', 'w10m_obs']
-    
-    df['dates'] = pd.to_datetime(df.dates, format='%Y%m%d%H') + df.foretimes.apply(lambda x: pd.Timedelta(x, unit='h'))
-    
-    df_obs = df[key_list+obs_list].drop_duplicates().sort_values(key_list).copy()
+
+    '''
+    # 滑动窗特征
     list_df_fea = []
     # 滑动窗平均
     for tw in [3, 6, 12, 24]: #滑动窗
@@ -141,18 +138,40 @@ def exract_feature(df, test_flag=False):
     df_all = pd.concat([df_obs[['stations', 'dates']], df_all], axis=1)
     df_all = pd.merge(df[key_list+M_list+ obs_list], 
         df_all, left_on=['stations', 'dates'], right_on=['stations', 'dates']).drop_duplicates(subset=['stations', 'dates'], keep='last')
-    
-    #for column in df.columns[4:]: # 将超出范围值设置为缺失值
-    #    df[THRESHOLD[column][0]>df[column]]=np.nan
-    #    df[THRESHOLD[column][1]<df[column]]=np.nan
+    '''
 
-    df_all['t2m_obj'] = df.t2m_obs - df.t2m_M
-    df_all['rh2m_obj'] = df.rh2m_obs - df.rh2m_M
-    df_all['w10m_obj'] = df.w10m_obs - df.w10m_M  
+    df['t2m_obj'] = df.t2m_obs - df.t2m_M
+    df['rh2m_obj'] = df.rh2m_obs - df.rh2m_M
+    df['w10m_obj'] = df.w10m_obs - df.w10m_M  
     
-    # feature 2 days ago
-    df_fea = df_obs.copy()
-    df_fea['dates'] = df_fea['dates'] + pd.Timedelta('2 days')
+
+    # 和之前相同时间段的均值特征
+    # feature 1 hour ago
+    df_all = df.copy()
+    df_fea = df.copy().drop('station_date_time', axis=1)
+    df_fea['dates'] = df_fea['dates'] + pd.Timedelta('1 hour')
+    df_all = pd.merge(
+        df_all, 
+        get_fea(df_fea, '1h'), 
+        left_on=['stations', 'dates', 'foretimes'], 
+        right_on=['stations', 'dates', 'foretimes']
+    )
+
+    # feature 12 hour ago
+    df_all = df.copy()
+    df_fea = df.copy().drop('station_date_time', axis=1)
+    df_fea['dates'] = df_fea['dates'] + pd.Timedelta('12 hours')
+    df_all = pd.merge(
+        df_all, 
+        get_fea(df_fea, '12h'), 
+        left_on=['stations', 'dates', 'foretimes'], 
+        right_on=['stations', 'dates', 'foretimes']
+    )
+
+    # feature 1 days ago
+    df_all = df.copy()
+    df_fea = df.copy().drop('station_date_time', axis=1)
+    df_fea['dates'] = df_fea['dates'] + pd.Timedelta('1 day')
     df_all = pd.merge(
         df_all, 
         get_fea(df_fea, '2d'), 
@@ -161,7 +180,7 @@ def exract_feature(df, test_flag=False):
     )
     
     # feature- 7 days ago
-    df_fea = df_obs.copy()
+    df_fea = df.copy().drop('station_date_time', axis=1)
     df_fea['dates'] = df_fea['dates'] + pd.Timedelta('7 days')
     df_all = pd.merge(
         df_all, 
@@ -171,18 +190,38 @@ def exract_feature(df, test_flag=False):
     )
     
     # feature - 1 year ago
-    df_fea = df_obs.copy()
+    df_fea = df.copy().drop('station_date_time', axis=1)
     df_fea['dates'] = df_fea['dates'] + pd.Timedelta('365 days')
-
     df_processed = pd.merge(
         df_all, 
         get_fea(df_fea, '1y'), 
         left_on=['stations', 'dates', 'foretimes'], 
         right_on=['stations', 'dates', 'foretimes']
     )
-    
-    # df_processed.drop(df_processed[df_processed.dates<df_processed.dates[0] + pd.Timedelta('365 days')].index)
 
+    # 傅里叶变换特征
+    fft_df = df_processed.copy()[key_list+M_list]
+    fft_df[M_list] = np.fft.fft(fft_df[M_list])
+    fft_df[M_list] = fft_df[M_list].apply(lambda x:x.real)
+    fft_df.rename(columns=dict(zip(fft_df.columns[4:], [f'{col}_fft' for col in fft_df.columns[4:]])), inplace=True)
+    df_processed = pd.merge(
+        df_processed, 
+        fft_df, 
+        left_on=key_list, 
+        right_on=key_list
+    )
+    
+    for i in range(90001,90011):
+        df_processed.replace(i, i-90001)
+    df_processed['month'] = df['dates'].apply(lambda x:x.month-1) # 月份信息
+    df_processed['week'] = df['dates'].apply(lambda x:x.weekday()) # 周几信息
+    df_processed['quarter']  = df['dates'].apply(lambda x:x.quarter-1) # 季度信息
+    df_processed['d10m_obs']  = (df['d10m_obs']/45).fillna(-1).astype(int)
+    df_processed['d10m_M']  = (df['d10m_M']/45).fillna(-1).astype(int) # 风向改为8个类别
+    df_processed.RAIN_M = (df_processed.RAIN_M>0).astype(int)
+    df_processed.RAIN_obs = (df_processed.RAIN_obs>0).astype(int)# 下雨改为01
+    df_processed['is_today'] = df_processed.dates.apply(lambda x:str(x.day)) == df_processed.station_date_time.str.split('_').apply(lambda x: x[1][6:8]) # 是否是今天标志位
+    # df_processed['is_today'] = df_processed['is_today'].astype(int) # 加了效果就变差0.1左右
     return df_processed  
     
 if __name__ == "__main__":
@@ -191,6 +230,7 @@ if __name__ == "__main__":
         combine_data(file_names)
 
     df = load_data("..\\data\\all_data.csv")
+    df = check(df)
 
     # train model
     df_processed = exract_feature(df)

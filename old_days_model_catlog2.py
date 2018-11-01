@@ -34,7 +34,7 @@ prd_time = '2018-10-15 03'
 from data_utils import *
 
 file_names = ['ai_challenger_wf2018_trainingset_20150301-20180531.nc','ai_challenger_wf2018_validation_20180601-20180828_20180905.nc',
-    'ai_challenger_wf2018_testa1_20180829-20180924.nc','ai_challenger_weather_testingsetB_20180829-20181015.nc', 'ai_challenger_wf2018_testb4_20180829-20181031.nc']
+    'ai_challenger_wf2018_testa1_20180829-20180924.nc','ai_challenger_weather_testingsetB_20180829-20181015.nc', 'ai_challenger_wf2018_testb5_20180829-20181101.nc']
 
 #file_names = ['ai_challenger_wf2018_trainingset_20150301-20180531.nc','ai_challenger_wf2018_validation_20180601-20180828_20180905.nc',
 #    'ai_challenger_wf2018_testa1_20180829-20180924.nc','ai_challenger_weather_testingsetB_20180829-20181015.nc']
@@ -72,7 +72,8 @@ def train_bst(X_tr, y_tr, X_val, y_val, feature_names='auto'):
     dval = lgb.Dataset(
         X_val, label=y_val, reference=dtrain, 
         feature_name=list(feature_names),
-        categorical_feature = ['stations','foretimes','week','month','quarter', 'd10m_M', 'RAIN_M', 'is_today']
+        categorical_feature = ['stations','foretimes','week','month','quarter', 'd10m_M', 'RAIN_M'] 
+        categorical_feature = ['stations','foretimes','week','month','quarter', 'd10m_M', 'RAIN_M', 'is_today'] # 加上is_today会变差，有点奇怪
     )
     bst = lgb.train(
         params, dtrain, num_boost_round=MAX_ROUNDS,
@@ -104,9 +105,9 @@ def exract_feature(df, test_flag=False):
     df['rh2m_obj'] = df.rh2m_obs - df.rh2m_M
     df['w10m_obj'] = df.w10m_obs - df.w10m_M
 
-    df = df.drop(['TC925_M', 'TC850_M', 'TC700_M'], axis=1, inplace=True) # 温度扔两头
-    df['Q_M'] = (df['Q975_M'] + df['Q925_M'] + df['Q850_M'] + df['Q700_M'] + df['Q500_M']) / 4
-    df = df.drop(['Q975_M', 'Q925_M', 'Q850_M', 'Q700_M', 'Q500_M'], axis=1, inplace=True) # 比湿取均值
+    # df.drop(['TC925_M', 'TC850_M', 'TC700_M'], axis=1, inplace=True) # 温度扔两头
+    # df['Q_M'] = (df['Q975_M'] + df['Q925_M'] + df['Q850_M'] + df['Q700_M'] + df['Q500_M']) / 4
+    # df.drop(['Q975_M', 'Q925_M', 'Q850_M', 'Q700_M', 'Q500_M'], axis=1, inplace=True) # 比湿取均值
 
     # feature 1 hour ago
     df_all = df.copy()
@@ -170,7 +171,8 @@ def exract_feature(df, test_flag=False):
     df_processed['d10m_M']  = (df['d10m_M']/45).fillna(-1).astype(int) # 风向改为8个类别
     df_processed.RAIN_M = (df_processed.RAIN_M>0).astype(int)
     df_processed.RAIN_obs = (df_processed.RAIN_obs>0).astype(int)# 下雨改为01
-    df_processed['is_today'] = (df_processed.dates.apply(lambda x:str(x.day)) == df_processed.station_date_time.str.split('_').apply(lambda x: x[1][6:8])).astype(int) # 是否是今天标志位
+    df_processed['is_today'] = df_processed.dates.apply(lambda x:str(x.day)) == df_processed.station_date_time.str.split('_').apply(lambda x: x[1][6:8]) # 是否是今天标志位
+    # df_processed['is_today'] = df_processed['is_today'].astype(int) # 加了效果就变差0.1左右
     return df_processed  
     
 if __name__ == "__main__":
@@ -180,7 +182,7 @@ if __name__ == "__main__":
 
     df = load_data("..\\data\\all_data.csv")
     df = check(df)
-    df = fill_missing_data(df) # 只填充重复时段部分的观测数据
+    # df = fill_missing_data(df) # 只填充重复时段部分的观测数据
     
     # train model
     df_processed = exract_feature(df)

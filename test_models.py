@@ -34,16 +34,19 @@ model_path = "..\\model\\"
 # test_file = "..\\data\\ai_challenger_wf2018_testb1_20180829-20181028.nc"
 
 # 测试分数
+obs_file = "../data/ai_challenger_wf2018_testb3_obs_20180829-20181030.csv" # 观测结果
+fore_file = "../data/ai_challenger_wf2018_testb3_fore_20180829-20181030.csv" # 超算结果
+
 # obs_file = "../data/ai_challenger_wf2018_testb2_obs_2018102903.csv" # 观测结果
 # fore_file = "../data/ai_challenger_wf2018_testb2_fore_2018102903.csv" # 超算结果
 
-obs_file = "../data/ai_challenger_wf2018_testb1_obs_2018102803.csv" # 观测结果
-fore_file = "../data/ai_challenger_wf2018_testb1_fore_2018102803.csv" # 超算结果
+#obs_file = "../data/ai_challenger_wf2018_testb1_obs_2018102803.csv" # 观测结果
+#fore_file = "../data/ai_challenger_wf2018_testb1_fore_2018102803.csv" # 超算结果
 
 SUPER_START = 4
 OBS_START = 4+29
 
-out_time = prd_time = '2018-10-28 03'
+out_time = prd_time = '2018-10-30 03'
 ans_name = 'forecast-' + "".join(re.split('-| ', out_time))+".csv"
 
 def print_score(fore_file, obs_file, anen_file):
@@ -224,7 +227,7 @@ def test_old_days_weight_model():
 
 def test_old_days_model_catlog():
     from old_days_model_catlog import model_t2m_file,model_rh2m_file,model_w10m_file,exract_feature
-    
+
     df = load_data("..\\data\\all_data_test.csv")
 
     df_processed = exract_feature(df)
@@ -287,15 +290,15 @@ def test_old_days_model_catlog2():
 def test_old_days_model3():
     from old_days_model3 import model_t2m_file,model_rh2m_file,model_w10m_file,exract_feature
 
-    df = load_data("..\\data\\all_data.csv")
+    df = load_data("..\\data\\all_data_test.csv")
 
     df_processed = exract_feature(df)
-    test_idx = df_processed[lambda x: x.dates >= prd_time].index
+    test_idx = df_processed[lambda x: x.station_date_time.str.split('_').apply(lambda x: x[1]) == prd_time.replace('-','').replace(' ','')].index
     df_test = df_processed.loc[test_idx]
-    # df_test.drop(df_train.columns[33:45], axis=1, inplace=True)
+    # df_test.drop(df_test.columns[33:45], axis=1, inplace=True)
     df_test.drop(pd.Index(['psur_obs', 't2m_obs', 'q2m_obs', 'w10m_obs',
         'd10m_obs', 'rh2m_obs', 'u10m_obs', 'v10m_obs', 'RAIN_obs', 't2m_obj', 'rh2m_obj', 'w10m_obj']), axis=1, inplace=True)
-    df_test_X = pd.concat([df_test[df_test.columns[1:]], df_test[df_test.columns[3:]]], axis=1)
+    df_test_X = pd.concat([df_test[df_test.columns[1]], df_test[df_test.columns[3:]]], axis=1)
     
     # 加载模型
     t2m_model = pickle.load(open(model_t2m_file, 'rb'))
@@ -313,4 +316,4 @@ def test_old_days_model3():
 
     # 计算分数
     anen_file = output_path+ans_name
-    print_score(fore_file, obs_file, anen_file)    
+    print_score(fore_file, obs_file, anen_file)
