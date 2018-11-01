@@ -120,7 +120,9 @@ def combine_data(file_names):
 
 # 加载数据
 def load_data(file_name):
-    return pd.read_csv(file_name,sep=',')
+    df = pd.read_csv(file_name,sep=',')
+    df['dates'] = pd.to_datetime(df.dates, format='%Y%m%d%H') + df.foretimes.apply(lambda x: pd.Timedelta(x, unit='h')) 
+    return df
 
 # 将数据分站点存储
 def divide_data_by_ports():
@@ -137,6 +139,12 @@ def check(df):
             df[THRESHOLD[column][0]>df[column]]=np.nan
             df[THRESHOLD[column][1]<df[column]]=np.nan   
     return df 
+
+def output_mean(file1, file2, columns, output):
+    df1 = pd.read_csv(file1)
+    df2 = pd.read_csv(file2)
+    df1[columns] = df1[columns] / 2 + df2[columns] / 2
+    df1.to_csv(output, index=False)
 
 def transfer_valid_to_test_format():
     """
@@ -254,8 +262,9 @@ def fill_missing_data(data):
         'Q700_M', 'Q500_M']
     tar_list = ['t2m_obs', 'rh2m_obs', 'w10m_obs']
     # attr_need = ['t2m_M', 'psfc_M', 'q2m_M', 'w10m_M', 'd10m_M', 'SWD_M', 'GLW_M', 'LH_M', 'HFX_M', 'RAIN_M', 'PBLH_M', 'psur_obs','t2m_obs','q2m_obs', 'w10m_obs', 'd10m_obs', 'rh2m_obs', 'u10m_obs', 'v10m_obs', 'RAIN_obs']
-    attr_need = obs_list + M_list
+    attr_need = obs_list
     data = fill_with_dup(data, attr_need) # 利用重复时段的值进行填充
     # data = fill_train_day1(data) # 利用均值填充第一天的超算数据   
-    data = fill_with_linear(data, attr_need) # 缺失值只有1,2,或者3个,线性填充
+    # attr_need = obs_list + M_list
+    # data = fill_with_linear(data, attr_need) # 缺失值只有1,2,或者3个,线性填充
     return data

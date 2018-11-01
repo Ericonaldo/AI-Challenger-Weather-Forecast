@@ -34,7 +34,7 @@ from test_models import prd_time
 from data_utils import *
 
 file_names = ['ai_challenger_wf2018_trainingset_20150301-20180531.nc','ai_challenger_wf2018_validation_20180601-20180828_20180905.nc',
-    'ai_challenger_wf2018_testa1_20180829-20180924.nc','ai_challenger_weather_testingsetB_20180829-20181015.nc', 'ai_challenger_wf2018_testb3_20180829-20181030.nc']
+    'ai_challenger_wf2018_testa1_20180829-20180924.nc','ai_challenger_weather_testingsetB_20180829-20181015.nc', 'ai_challenger_wf2018_testb4_20180829-20181031.nc']
 
 #file_names = ['ai_challenger_wf2018_trainingset_20150301-20180531.nc','ai_challenger_wf2018_validation_20180601-20180828_20180905.nc',
 #    'ai_challenger_wf2018_testa1_20180829-20180924.nc','ai_challenger_weather_testingsetB_20180829-20181015.nc']
@@ -98,8 +98,6 @@ def exract_feature(df, test_flag=False):
         'wspd850_M', 'wspd700_M', 'wspd500_M', 'Q975_M', 'Q925_M', 'Q850_M',
         'Q700_M', 'Q500_M']
     tar_list = ['t2m_obs', 'rh2m_obs', 'w10m_obs']
-
-    df['dates'] = pd.to_datetime(df.dates, format='%Y%m%d%H') + df.foretimes.apply(lambda x: pd.Timedelta(x, unit='h')) 
 
     #for column in df.columns[4:]: # 将超出范围值设置为缺失值
     #    df[THRESHOLD[column][0]>df[column]]=np.nan

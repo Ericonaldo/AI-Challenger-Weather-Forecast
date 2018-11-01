@@ -87,8 +87,6 @@ def exract_feature(df, test_flag=False):
         'Q700_M', 'Q500_M']
     tar_list = ['t2m_obs', 'rh2m_obs', 'w10m_obs']
     
-    df['dates'] = pd.to_datetime(df.dates, format='%Y%m%d%H') + df.foretimes.apply(lambda x: pd.Timedelta(x, unit='h')) 
-    
     df_obs = df[key_list+obs_list].drop_duplicates().sort_values(key_list)
 
     list_df_fea = []
