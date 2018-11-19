@@ -121,7 +121,8 @@ def combine_data(file_names):
 # 加载数据
 def load_data(file_name):
     df = pd.read_csv(file_name,sep=',')
-    df['dates'] = pd.to_datetime(df.dates, format='%Y%m%d%H') + df.foretimes.apply(lambda x: pd.Timedelta(x, unit='h')) 
+    if df['dates'].dtype == 'int64':
+        df['dates'] = pd.to_datetime(df.dates, format='%Y%m%d%H') + df.foretimes.apply(lambda x: pd.Timedelta(x, unit='h')) 
     return df
 
 def load_sun_df():

@@ -55,6 +55,12 @@ OBS_START = 4+29
 out_time = prd_time = '2018-11-01 03'
 ans_name = 'forecast-' + "".join(re.split('-| ', out_time))+".csv"
 
+def parse_args():
+    parser = argparse.ArgumentParser(description='testing for ai challenger weather forecast')
+    parser.add_argument('--model', type=str, default='old_days_model_catlog2', help='which model to test (default: old_days_model_catlog2)')
+    args = parser.parse_args()
+    return args
+
 def print_score(fore_file, obs_file, anen_file):
     result = eval_result(fore_file, obs_file, anen_file)
     print(result)
@@ -89,7 +95,9 @@ def predict(df_processed, model, prd_time):
 # test windows model
 def test_windows_model():
     from windows_model import model_t2m_file,model_rh2m_file,model_w10m_file,exract_feature
-    
+
+    test_file = "../data/ai_challenger_wf2018_testb1_20180829-20181028.nc"
+    out_time = pprd_time = '2018-10-28 03'
     if(not os.path.exists(data_path_1 + "test.csv")):
         transfer_data_to_csv(test_file, data_path_1 + "test.csv")
     test_df = load_data(data_path_1 + "test.csv")
@@ -114,7 +122,9 @@ def test_windows_model():
 
 def test_windows_station_model():
     from windows_station_model import model_t2m_file,model_rh2m_file,model_w10m_file,exract_feature
-    
+
+    test_file = "../data/ai_challenger_wf2018_testb1_20180829-20181028.nc"
+    out_time = pprd_time = '2018-10-28 03'
     if(not os.path.exists(data_path_1 + "test.csv")):
         transfer_data_to_csv(test_file, data_path_1 + "test.csv")   
     test_df = load_data(data_path_1 + "test.csv")
@@ -306,3 +316,16 @@ def test_old_days_model3():
     # 计算分数
     anen_file = output_path+ans_name
     print_score(fore_file, obs_file, anen_file)
+    
+if __name__ == "__main__":
+    args = parse_args()
+    model_name = args.model
+    print(f'Testing with {model_name}')
+    if model_name == 'windows_model':
+        test_windows_model()
+    elif model_name == 'old_days_model':
+        test_old_days_model()
+    elif model_name == 'old_days_model_catlog':
+        test_old_days_model_catlog()
+    elif model_name == 'old_days_model_catlog2':
+        test_old_days_model_catlog2()

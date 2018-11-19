@@ -1,0 +1,12 @@
+# local package
+-e .
+
+# external requirements
+netCDF4
+pandas
+numpy
+matplotlib==3.0.0
+sklearn
+seaborn
+xgboost
+lightgbm
