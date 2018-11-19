@@ -35,7 +35,7 @@ We use different models in different days.
 
   5. In the last two days other teammates also tried different features in './final_days/train_new.py' and './final_days/train_new2.py' during Test B6 - Test B7.
 
-If you want to train those models, just **run the model python file in your terminal "python xxx.py"** (If the data is not ready, data process codes are included in these files.), except **'train_new.py/train_new2.py'** which you can **run 'python train_new.py/train_new2.py'** in your terminal (make sure that all_data.csv is in './code/final_days').
+If you want to train those models, just **run the model python file in your terminal "python xxx.py"** (If the data is not ready, data process codes are included in these files.), except **'train_new.py/train_new2.py'** which you can **run 'python train_new.py/train_new2.py'** in your terminal (make sure that all_data.csv is in './code/final_days', sorry for bad organization).
 
 PS: We use data before date '2018-10-15' because we find that data after that may cause a worse result.
 

@@ -165,7 +165,7 @@ if __name__ == "__main__":
     df_train.drop(pd.Index(['psur_obs', 't2m_obs', 'q2m_obs', 'w10m_obs',
         'd10m_obs', 'rh2m_obs', 'u10m_obs', 'v10m_obs', 'RAIN_obs', 't2m_obj', 'rh2m_obj', 'w10m_obj']), axis=1, inplace=True)
         
-    df_train.sort_values('dates')
+    df_train.sort_values('dates', inplace=True)
 
     df_train_X = pd.concat([df_train[df_train.columns[1]], df_train[df_train.columns[3:]]], axis=1)
     # print(df_train_X.columns)
