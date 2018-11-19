@@ -21,7 +21,7 @@ After downloaded, set three original dataset into the folder ./data and then pro
 
 (file_names = ['ai_challenger_wf2018_trainingset_20150301-20180531.nc','ai_challenger_wf2018_validation_20180601-20180828_20180905.nc', 'ai_challenger_wf2018_testb7_20180829-20181103.nc'])
 
-###Train Models
+### Train Models
 
 We use different models in different days.
 
@@ -33,11 +33,11 @@ We use different models in different days.
 
   4. We then add more features into the last model in 'train_old_days_model_catlog2.py' during Test B5 - Test B7.
 
-  5. In the last two days other teammates also tried different features in 'train_final_model.py' during Test B6 - Test B7.
+  5. In the last two days other teammates also tried different features in './final_days/train_new.py' and './final_days/train_new2.py' during Test B6 - Test B7.
 
-      If you want to train those models, just **run the model python file in your terminal "python xxx.py" except 'train_final_model.py'** which you cam **run 'train_final_model.sh'** in your terminal. (If the data is not ready, data process codes are included in these files.)
+If you want to train those models, just **run the model python file in your terminal "python xxx.py"** (If the data is not ready, data process codes are included in these files.), except **'train_new.py/train_new2.py'** which you can **run 'python train_new.py/train_new2.py'** in your terminal (make sure that all_data.csv is in './code/final_days').
 
-      PS: We use data before date '2018-10-15' because we find that data after that may cause a worse result.
+PS: We use data before date '2018-10-15' because we find that data after that may cause a worse result.
 
 ### Test Models
 Model testing codes are mainly included in 'test_models.py'.
@@ -49,7 +49,7 @@ Model testing codes are mainly included in 'test_models.py'.
 
  Then the result score will be results of Test B5's data.
 
-2. For **'final_model'**, **run 'train_final_model.sh'** and the results every day will be computed automatically.
+2. For **'final_days'** model, **run "python train_new.py"** or **run "python train_new2.py",** the results every day will be computed automatically.
 
 Hope this project will help you.
 
@@ -61,6 +61,7 @@ Project Organization
 
     ├── README.md          <- The top-level README for developers using this project.
     ├── code               <- All codes of this solution.
+    │   └── final_days     <- The source code, model file and submitted file for another model in the last two days.
     ├── data               <- All data of this competition.
     │   └── tmp            <- Temporary Data.
     modeling.
