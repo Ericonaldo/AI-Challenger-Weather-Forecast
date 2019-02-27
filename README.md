@@ -1,4 +1,4 @@
-AI Challenger 2018 Weather Forecasting TOP5 Solution
+AI Challenger 2018 Weather Forecasting TOP3 Solution
 ==============================
 > Give more accurate weather forecasts using single models based on machine learning.
 
