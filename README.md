@@ -8,7 +8,7 @@ Codes are run on **Windows**. It is based on **Python 3.6.** Required packages a
 > pip install -r requirements.txt
 
 ### Pipeline for quick start.
-All raw data are in ./data, along with data that we have processed into a single .csv file which is in all_data.zip, you can first unzip this file and then you can run those code.
+All raw data are in ./data, along with data that we have processed into a single .csv file which is in all_data.zip, you can first unzip this file and then you can run those code. **Anyone who download data here, please follow the [protocol](https://challenger.ai/terms/data) and do not use it for business!!**
 
 Or you want to download by yourself, then you can go to https://challenger.ai/competition/wf2018. to downlowd 3 datasets as bellow (You can switch to English from top-right corner):
 
